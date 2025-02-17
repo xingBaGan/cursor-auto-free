@@ -277,6 +277,7 @@ def sign_up_account(browser, tab, account_info, email_handler):
 
     handle_turnstile(tab)
 
+    total_usage = None  # 初始化 total_usage 变量
     while True:
         try:
             if tab.ele("Account Settings"):
@@ -291,15 +292,14 @@ def sign_up_account(browser, tab, account_info, email_handler):
 
                 logging.info(f"成功获取验证码: {code}")
                 logging.info("正在输入验证码...")
-                i = 0
-                for digit in code:
+                for i, digit in enumerate(code):
                     tab.ele(f"@data-index={i}").input(digit)
                     time.sleep(random.uniform(0.1, 0.3))
-                    i += 1
                 logging.info("验证码输入完成")
                 break
         except Exception as e:
             logging.error(f"验证码处理过程出错: {str(e)}")
+            return False
 
     handle_turnstile(tab)
     wait_time = random.randint(3, 6)
@@ -325,25 +325,31 @@ def sign_up_account(browser, tab, account_info, email_handler):
             )
     except Exception as e:
         logging.error(f"获取账户额度信息失败: {str(e)}")
+        total_usage = "Unknown"
 
     logging.info("\n=== 注册完成 ===")
-    account_info = f"Cursor 账号信息:\n邮箱: {account_info['email']}\n密码: {account_info['password']}"
+    account_info_str = f"Cursor 账号信息:\n邮箱: {account_info['email']}\n密码: {account_info['password']}"
     info_obj = {
         "email": account_info['email'],
         "password": account_info['password'],
         "usage_limit": total_usage
     }
-    logging.info(account_info)
-    # 判断本地是否存在account_info.json文件， 不存在则创建， 存在则读取
-    if not os.path.exists("account_info.json"):
-        with open("account_info.json", "w", encoding="utf-8") as f:
-            json.dump([info_obj], f)
-    else:
-        with open("account_info.json", "r", encoding="utf-8") as f:
-            accounts = json.load(f)
-            accounts.append(info_obj)
+    logging.info(account_info_str)
+    
+    # 保存账号信息到文件
+    try:
+        if not os.path.exists("account_info.json"):
             with open("account_info.json", "w", encoding="utf-8") as f:
-                json.dump(accounts, f)
+                json.dump([info_obj], f, ensure_ascii=False, indent=2)
+        else:
+            with open("account_info.json", "r", encoding="utf-8") as f:
+                accounts = json.load(f)
+                accounts.append(info_obj)
+                with open("account_info.json", "w", encoding="utf-8") as f:
+                    json.dump(accounts, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"保存账号信息失败: {str(e)}")
+
     time.sleep(5)
     return True
 
