@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from cursor_signup_service import CursorSignupService
 from logger import logging
 import json
@@ -246,6 +246,19 @@ def print_cards_status():
     print(f"总卡密数: {total_cards}")
     print(f"总账号数: {total_accounts}")
     print("=" * 50 + "\n")
+
+@app.route('/')
+def index():
+    """提供卡密管理页面"""
+    return render_template('index.html')
+
+# 添加 CORS 支持
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
 
 if __name__ == '__main__':
     # 启动时打印当前状态

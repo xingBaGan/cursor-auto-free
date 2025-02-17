@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor 卡密管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .loading-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="loading">
+        <div class="loading-content">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>处理中，请稍候...</p>
+            <p class="text-sm text-gray-300 mt-2">平均注册时间：一分钟</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Cursor 卡密管理系统</h1>
+        
+        <!-- 卡密输入框 -->
+        <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="cardInput">
+                    卡密
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                       id="cardInput" 
+                       type="text" 
+                       placeholder="请输入卡密">
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="queryCard()" 
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex-1">
+                    查询卡密
+                </button>
+                <button onclick="registerAccount()" 
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex-1">
+                    注册账号
+                </button>
+            </div>
+        </div>
+
+        <!-- 卡密信息显示区域 -->
+        <div id="cardInfo" class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 hidden">
+            <h2 class="text-xl font-bold mb-4">卡密信息</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold">卡密状态:</span>
+                    <span id="cardStatus"></span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold">创建时间:</span>
+                    <span id="cardCreatedAt"></span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold">已注册账号数:</span>
+                    <span id="accountCount"></span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold">剩余可注册数:</span>
+                    <span id="remainingCount"></span>
+                </div>
+            </div>
+
+            <!-- 账号列表 -->
+            <div id="accountsList" class="mt-6">
+                <h3 class="text-lg font-semibold mb-4">已注册账号</h3>
+                <div id="accountsContainer" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- 结果提示框 -->
+        <div id="notification" class="fixed bottom-4 right-4 max-w-md bg-white rounded-lg shadow-lg p-4 hidden">
+            <div id="notificationContent" class="text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        const card_info = {};
+        const API_BASE_URL = 'http://localhost:5000';
+        const loading = document.querySelector('.loading');
+        const notification = document.getElementById('notification');
+        const notificationContent = document.getElementById('notificationContent');
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showNotification(message, isError = false) {
+            notificationContent.textContent = message;
+            notification.className = `fixed bottom-4 right-4 max-w-md rounded-lg shadow-lg p-4 ${
+                isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+            }`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        async function queryCard() {
+            const cardNumber = document.getElementById('cardInput').value.trim();
+            if (!cardNumber) {
+                showNotification('请输入卡密', true);
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/cards/${cardNumber}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    card_info = result.data;
+                    displayCardInfo(result.data);
+                } else {
+                    showNotification(result.message, true);
+                }
+            } catch (error) {
+                showNotification('查询失败: ' + error.message, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function registerAccount() {
+            const cardNumber = document.getElementById('cardInput').value.trim();
+            if (!cardNumber) {
+                showNotification('请输入卡密', true);
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/signup/card`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ card: cardNumber }),
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('账号注册成功！');
+                    card_info.info.accounts.push(result.data.account);
+                    displayCardInfo(card_info);
+                } else {
+                    showNotification(result.message, true);
+                }
+            } catch (error) {
+                showNotification('注册失败: ' + error.message, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayCardInfo(data) {
+            const cardInfo = document.getElementById('cardInfo');
+            cardInfo.classList.remove('hidden');
+
+            // 更新卡密基本信息
+            document.getElementById('cardStatus').textContent = data.info.status;
+            document.getElementById('cardCreatedAt').textContent = data.info.created_at;
+            document.getElementById('accountCount').textContent = data.info.accounts.length;
+            document.getElementById('remainingCount').textContent = 5 - data.info.accounts.length;
+
+            // 更新账号列表
+            const accountsContainer = document.getElementById('accountsContainer');
+            accountsContainer.innerHTML = '';
+
+            data.info.accounts.forEach((account, index) => {
+                const accountElement = document.createElement('div');
+                accountElement.className = 'bg-gray-50 p-4 rounded-lg';
+                accountElement.innerHTML = `
+                    <div class="font-semibold mb-2">账号 ${index + 1}</div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>邮箱: ${account.email}</div>
+                        <div>密码: ${account.password}</div>
+                        <div>额度查看: <a href="https://www.cursor.com/settings" target="_blank">https://www.cursor.com/settings</a></div>
+                        <div>添加时间: ${account.added_at}</div>
+                    </div>
+                `;
+                accountsContainer.appendChild(accountElement);
+            });
+        }
+    </script>
+</body>
+</html> 
