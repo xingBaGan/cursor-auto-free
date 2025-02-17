@@ -18,15 +18,33 @@ def build_exe():
     # PyInstaller命令
     cmd = [
         "pyinstaller",
-        "ResetCursor.spec",
+        "--name=ResetCursor",
+        "--onefile",
+        "--console",
+        "--clean",
         "--distpath", output_dir,
         "--workpath", "build",
-        "--noconfirm"
+        "--noconfirm",
+        "reset_machine_id.py"  # 主程序文件
     ]
     
     try:
         # 执行构建
         subprocess.run(cmd, check=True)
+        
+        # 复制其他必要文件
+        additional_files = [
+            "requirements.txt",
+            "reset_machine.py",
+            "go_cursor_help.py",
+            "patch_cursor_get_machine_id.py",
+            "logger.py"
+        ]
+        
+        for file in additional_files:
+            if os.path.exists(file):
+                shutil.copy2(file, output_dir)
+        
         print(f"{Fore.GREEN}Build successful!{Style.RESET_ALL}")
         print(f"Output directory: {os.path.abspath(output_dir)}")
         
@@ -56,6 +74,10 @@ def build_unix():
         files_to_copy = [
             script_name,
             "reset_machine_id.py",
+            "reset_machine.py",
+            "go_cursor_help.py",
+            "patch_cursor_get_machine_id.py",
+            "logger.py",
             "requirements.txt"
         ]
         

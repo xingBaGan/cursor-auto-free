@@ -21,6 +21,7 @@ jobs:
       working-directory: reset_cursor
       run: |
         python -m pip install --upgrade pip
+        pip install pyinstaller
         pip install -r requirements.txt
         
     - name: Build Windows EXE
