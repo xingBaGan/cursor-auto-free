@@ -25,7 +25,10 @@ jobs:
         
     - name: Build Windows EXE
       working-directory: reset_cursor
+      env:
+        PYTHONIOENCODING: utf-8
       run: |
+        chcp 65001
         python build.py
         
     - name: Upload Windows artifact
