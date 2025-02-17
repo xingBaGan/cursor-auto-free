@@ -69,7 +69,7 @@ class CardManager:
 
 card_manager = CardManager()
 
-@app.route('/signup', methods=['POST'])
+# @app.route('/signup', methods=['POST'])
 def signup():
     try:
         # 获取可用卡密
@@ -135,6 +135,86 @@ def get_card(card):
         'success': False,
         'message': 'Card not found'
     }), 404
+
+@app.route('/signup/card', methods=['POST'])
+def signup_with_card():
+    """使用卡密注册账号"""
+    try:
+        data = request.get_json()
+        card_number = data.get('card')
+        
+        if not card_number:
+            return jsonify({
+                'success': False,
+                'message': '请提供卡密'
+            }), 400
+            
+        # 获取卡密信息
+        card_info = card_manager.get_card_info(card_number)
+        if not card_info:
+            return jsonify({
+                'success': False,
+                'message': '无效的卡密'
+            }), 404
+            
+        # 检查卡密状态
+        if card_info['status'] != 'active':
+            return jsonify({
+                'success': False,
+                'message': '卡密已失效'
+            }), 400
+            
+        # 检查账号数量限制
+        if len(card_info['accounts']) >= 5:
+            return jsonify({
+                'success': False,
+                'message': '卡密已达到最大使用次数(5个账号)'
+            }), 400
+            
+        # 注册新账号
+        signup_service = CursorSignupService()
+        result = signup_service.sign_up_account()
+        
+        if result['success']:
+            # 将账号信息添加到卡密
+            account_info = {
+                'email': result['email'],
+                'password': result['password'],
+                'token': result['token'],
+                'usage_limit': result['usage_limit'],
+                'added_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            card_manager.add_account_to_card(card_number, account_info)
+            
+            # 获取卡密当前状态
+            updated_card_info = card_manager.get_card_info(card_number)
+            accounts_count = len(updated_card_info['accounts'])
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'card': card_number,
+                    'account': account_info,
+                    'card_info': {
+                        'total_accounts': accounts_count,
+                        'remaining_slots': 5 - accounts_count,
+                        'status': updated_card_info['status']
+                    }
+                },
+                'message': '账号注册成功'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': result['error']
+            }), 400
+            
+    except Exception as e:
+        logging.error(f"卡密注册API错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'服务器内部错误: {str(e)}'
+        }), 500
 
 def print_cards_status():
     """打印所有卡密状态"""

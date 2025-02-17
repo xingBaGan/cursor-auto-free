@@ -361,6 +361,8 @@ class CursorSignupService:
         self.password = None
         self.first_name = None
         self.last_name = None
+        self.cards_file = "cards.json"
+        self.max_accounts_per_card = 5
 
     def get_cursor_session_token(self, tab, max_attempts=3, retry_interval=2):
         """
@@ -563,4 +565,96 @@ class CursorSignupService:
                 return usage_info.split("/")[-1].strip()
         except Exception as e:
             logging.error(f"获取账户额度信息失败: {str(e)}")
-            return "Unknown" 
+            return "Unknown"
+
+    def validate_card(self, card_number: str) -> bool:
+        """
+        验证卡密是否有效且未超过使用次数限制
+        
+        Args:
+            card_number: 卡密号码
+            
+        Returns:
+            bool: 卡密是否有效
+        """
+        try:
+            if not os.path.exists(self.cards_file):
+                logging.error("cards.json 文件不存在")
+                return False
+                
+            with open(self.cards_file, 'r', encoding='utf-8') as f:
+                cards = json.load(f)
+                
+            # 查找卡密
+            card = next((c for c in cards if c.get('number') == card_number), None)
+            if not card:
+                logging.error("无效的卡密")
+                return False
+                
+            # 检查使用次数
+            if card.get('used_count', 0) >= self.max_accounts_per_card:
+                logging.error(f"卡密已达到最大使用次数 ({self.max_accounts_per_card})")
+                return False
+                
+            return True
+                
+        except Exception as e:
+            logging.error(f"验证卡密时出错: {str(e)}")
+            return False
+            
+    def update_card_usage(self, card_number: str) -> bool:
+        """
+        更新卡密使用次数
+        
+        Args:
+            card_number: 卡密号码
+            
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            with open(self.cards_file, 'r', encoding='utf-8') as f:
+                cards = json.load(f)
+                
+            # 更新使用次数
+            for card in cards:
+                if card['number'] == card_number:
+                    card['used_count'] = card.get('used_count', 0) + 1
+                    break
+                    
+            # 保存更新后的数据
+            with open(self.cards_file, 'w', encoding='utf-8') as f:
+                json.dump(cards, f, indent=2, ensure_ascii=False)
+                
+            return True
+            
+        except Exception as e:
+            logging.error(f"更新卡密使用次数时出错: {str(e)}")
+            return False
+
+    def register_with_card(self, card_number: str) -> Dict[str, Any]:
+        """
+        使用卡密注册新账号
+        
+        Args:
+            card_number: 卡密号码
+            
+        Returns:
+            Dict[str, Any]: 注册结果，包含成功状态和账号信息
+        """
+        # 验证卡密
+        if not self.validate_card(card_number):
+            return {
+                'success': False,
+                'error': '无效的卡密或已达到使用次数限制'
+            }
+            
+        # 执行注册流程
+        result = self.sign_up_account()
+        
+        # 如果注册成功，更新卡密使用次数
+        if result['success']:
+            if not self.update_card_usage(card_number):
+                logging.warning("更新卡密使用次数失败，但账号已注册成功")
+                
+        return result 
