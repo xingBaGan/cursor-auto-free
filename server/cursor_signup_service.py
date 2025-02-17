@@ -328,15 +328,20 @@ def sign_up_account(browser, tab, account_info, email_handler):
 
     logging.info("\n=== 注册完成 ===")
     account_info = f"Cursor 账号信息:\n邮箱: {account_info['email']}\n密码: {account_info['password']}"
+    info_obj = {
+        "email": account_info['email'],
+        "password": account_info['password'],
+        "usage_limit": total_usage
+    }
     logging.info(account_info)
     # 判断本地是否存在account_info.json文件， 不存在则创建， 存在则读取
     if not os.path.exists("account_info.json"):
         with open("account_info.json", "w", encoding="utf-8") as f:
-            json.dump([account_info], f)
+            json.dump([info_obj], f)
     else:
         with open("account_info.json", "r", encoding="utf-8") as f:
             accounts = json.load(f)
-            accounts.append(account_info)
+            accounts.append(info_obj)
             with open("account_info.json", "w", encoding="utf-8") as f:
                 json.dump(accounts, f)
     time.sleep(5)
