@@ -1,4 +1,6 @@
 from server import card_manager, print_cards_status
+from cursor_signup_service import CursorSignupService
+from datetime import datetime
 import argparse
 
 def main():
@@ -11,8 +13,23 @@ def main():
     args = parser.parse_args()
     
     if args.new:
-        card = card_manager.generate_card()
-        print(f"已生成新卡密: {card}")
+        card_number = card_manager.generate_card()
+        signup_service = CursorSignupService()
+        result = signup_service.sign_up_account()
+        
+        if result['success']:
+            # 将账号信息添加到卡密
+            account_info = {
+                'email': result['email'],
+                'password': result['password'],
+                'token': result['token'],
+                'usage_limit': result['usage_limit'],
+                'added_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            card_manager.add_account_to_card(card_number, account_info)
+            print(f"已生成新卡密: {card_number}")
+        else:
+            print(f"生成失败: {result['message']}")
     
     elif args.disable:
         if args.disable in card_manager.cards:
