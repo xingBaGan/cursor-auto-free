@@ -106,12 +106,20 @@ jobs:
         with:
           path: artifacts
           
+      - name: List artifacts
+        run: |
+          ls -R artifacts/
+          
       - name: Create release archives
         run: |
           cd artifacts
-          zip -r ResetCursor-Windows.zip ResetCursor-Windows/
-          zip -r ResetCursor-MacOS.zip ResetCursor-MacOS/
-          zip -r ResetCursor-Linux.zip ResetCursor-Linux/
+          for dir in */; do
+            platform=${dir%/}
+            echo "Creating zip for $platform"
+            cd "$platform"
+            zip -r "../$platform.zip" ./*
+            cd ..
+          done
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
