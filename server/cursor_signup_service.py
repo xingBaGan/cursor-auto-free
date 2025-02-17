@@ -8,9 +8,6 @@ from email_generator import EmailGenerator
 from cursor_auth_manager import CursorAuthManager
 from enum import Enum
 from typing import Optional
-import go_cursor_help
-import patch_cursor_get_machine_id
-from reset_machine import MachineIDResetter
 import os
 from config import Config
 import json
@@ -213,23 +210,6 @@ def get_user_agent():
     except Exception as e:
         logging.error(f"获取user agent失败: {str(e)}")
         return None
-
-
-def check_cursor_version():
-    """检查cursor版本"""
-    pkg_path, main_path = patch_cursor_get_machine_id.get_cursor_paths()
-    with open(pkg_path, "r", encoding="utf-8") as f:
-        version = json.load(f)["version"]
-    return patch_cursor_get_machine_id.version_check(version, min_version="0.45.0")
-
-
-def reset_machine_id(greater_than_0_45):
-    if greater_than_0_45:
-        # 提示请手动执行脚本 https://github.com/chengazhen/cursor-auto-free/blob/main/patch_cursor_get_machine_id.py
-        go_cursor_help.go_cursor_help()
-    else:
-        MachineIDResetter().reset_machine_ids()
-
 
 def print_end_message():
     logging.info("\n\n\n\n\n")

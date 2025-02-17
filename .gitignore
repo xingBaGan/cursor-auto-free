@@ -28,3 +28,4 @@ node_modules/
 
 screenshots/
 server/*.json
+reset_cursor/venv
