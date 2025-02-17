@@ -60,6 +60,12 @@
                 </button>
             </div>
         </div>
+        
+        <div class="text-center text-sm text-gray-500">
+            <p class="mb-2 text-red-500">每次使用新的账号，请先使用重置工具包重置device_id</p>
+            <p class="mb-2">cursor重置工具包</p>
+            <a href="https://github.com/xingBaGan/cursor-auto-free/releases/tag/v0.0.4-pre" target="_blank">https://github.com/xingBaGan/cursor-auto-free/releases/tag/v0.0.4-pre</a>
+        </div>
 
         <!-- 卡密信息显示区域 -->
         <div id="cardInfo" class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 hidden">
@@ -97,7 +103,7 @@
     </div>
 
     <script>
-        const card_info = {};
+        let card_info = {};
         const API_BASE_URL = 'http://localhost:5000';
         const loading = document.querySelector('.loading');
         const notification = document.getElementById('notification');
