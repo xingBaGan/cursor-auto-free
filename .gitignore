@@ -27,3 +27,4 @@ node_modules/
 .env
 
 screenshots/
+server/*.json
